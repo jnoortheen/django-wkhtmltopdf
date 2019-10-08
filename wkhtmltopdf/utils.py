@@ -23,7 +23,7 @@ from django.template import loader
 from django.template.context import Context, RequestContext
 import six
 
-from .subprocess import check_output
+import subprocess
 
 NO_ARGUMENT_OPTIONS = ['--collate', '--no-collate', '-H', '--extended-help', '-g',
                        '--grayscale', '-h', '--help', '--htmldoc', '--license', '-l',
@@ -143,7 +143,16 @@ def wkhtmltopdf(pages, output=None, **kwargs):
         # can't call fileno() on mod_wsgi stderr object
         pass
 
-    return check_output(ck_args, **ck_kwargs)
+    process = subprocess.run(ck_args, stdout=subprocess.PIPE,  **ck_kwargs)  # type: subprocess.CompletedProcess
+
+    # these error codes are actually not necessarily errors.
+    # See - https://github.com/KnpLabs/snappy/issues/177#issuecomment-141008420
+    if process.returncode not in {0, 1, 2, 'X', 'Y', 'Z', }:
+
+        raise subprocess.CalledProcessError(
+            process.returncode, process.args, output=process.stdout, stderr=process.stderr
+        )
+    return process.stdout
 
 def convert_to_pdf(filename, header_filename=None, footer_filename=None, cmd_options=None, cover_filename=None):
     # Clobber header_html and footer_html only if filenames are
