@@ -23,7 +23,10 @@ from django.template import loader
 from django.template.context import Context, RequestContext
 import six
 
-import subprocess
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 NO_ARGUMENT_OPTIONS = ['--collate', '--no-collate', '-H', '--extended-help', '-g',
                        '--grayscale', '-h', '--help', '--htmldoc', '--license', '-l',
@@ -148,7 +151,6 @@ def wkhtmltopdf(pages, output=None, **kwargs):
     # these error codes are actually not necessarily errors.
     # See - https://github.com/KnpLabs/snappy/issues/177#issuecomment-141008420
     if process.returncode not in {0, 1, 2, 'X', 'Y', 'Z', }:
-
         raise subprocess.CalledProcessError(
             process.returncode, process.args, output=process.stdout, stderr=process.stderr
         )
